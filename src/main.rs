@@ -1,42 +1,38 @@
 mod echo;
 mod init;
+mod types;
+mod utils;
 
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
-use serde_json::{self};
-use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{self, AsyncBufReadExt, BufReader, Lines, Stdin};
 
 use echo::*;
 use init::*;
+use types::base::BaseData;
+use utils::read_json_from_stdin;
 
-async fn print_json_to_stdout<T: Serialize>(data: T) {
-    // Serialize the new data to a JSON string
-    let json = serde_json::to_string(&data).unwrap();
+pub async fn repl(
+    mut reader: Lines<BufReader<Stdin>>,
+    node_id: String,
+    _node_ids: HashSet<String>,
+) {
+    let mut msg_id = 1;
 
-    // Print the JSON string to stdout
-    tokio::io::stdout()
-        .write_all(json.as_bytes())
-        .await
-        .unwrap();
-    tokio::io::stdout().write_all(b"\n").await.unwrap();
-}
+    loop {
+        let (data, line) = read_json_from_stdin::<BaseData>(&mut reader).await;
+        match node_id == data.dest {
+            true => match data.body.r#type.as_str() {
+                "echo" => {
+                    run_echo(node_id.as_str(), msg_id, &line).await;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct BaseBody {
-    r#type: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct BaseData {
-    src: String,
-    dest: String,
-    body: BaseBody,
-}
-
-enum AppState {
-    Uninitialized,
-    Initialized(usize, String, HashSet<String>),
+                    msg_id = msg_id + 1;
+                }
+                _ => {}
+            },
+            false => {}
+        }
+    }
 }
 
 #[tokio::main]
@@ -44,39 +40,13 @@ async fn main() {
     let stdin = io::stdin();
     let mut reader = BufReader::new(stdin).lines();
 
-    let mut app_state = AppState::Uninitialized;
+    let (init_data, init_line) = read_json_from_stdin::<BaseData>(&mut reader).await;
+    match init_data.body.r#type.as_str() {
+        "init" => {
+            let (node_id, node_ids) = run_init(&init_line).await;
 
-    loop {
-        if let Some(line) = reader.next_line().await.unwrap() {
-            eprintln!("{}", line);
-            // Deserialize the JSON string into MyData struct
-            let data: BaseData = serde_json::from_str(&line).unwrap();
-            match &app_state {
-                AppState::Uninitialized => match data.body.r#type.as_str() {
-                    "init" => {
-                        let (init_response, node_id, node_ids) = get_init_response(&line);
-
-                        app_state = AppState::Initialized(1, node_id, node_ids);
-
-                        print_json_to_stdout(&init_response).await;
-                    }
-                    _ => {}
-                },
-                AppState::Initialized(msg_id, id, all_ids) => match id == &data.dest {
-                    true => match data.body.r#type.as_str() {
-                        "echo" => {
-                            let echo_response = get_echo_response(id, *msg_id, &line);
-
-                            app_state =
-                                AppState::Initialized(*msg_id + 1, id.clone(), all_ids.clone());
-
-                            print_json_to_stdout(echo_response).await;
-                        }
-                        _ => {}
-                    },
-                    false => {}
-                },
-            }
+            repl(reader, node_id, node_ids).await;
         }
+        _ => {}
     }
 }
