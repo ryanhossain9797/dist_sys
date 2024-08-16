@@ -5,8 +5,8 @@ use crate::{
     utils::print_json_to_stdout,
 };
 
-pub async fn run_generate(node_id: &str, msg_id: usize, line: &str) {
-    let generate_data: GenerateData = serde_json::from_str(&line).unwrap();
+pub async fn run_generate(node_id: &str, msg_id: usize, line: &str) -> anyhow::Result<()> {
+    let generate_data: GenerateData = serde_json::from_str(&line)?;
 
     let now = Utc::now();
     let utc_ticks = now.timestamp_micros();
@@ -22,5 +22,6 @@ pub async fn run_generate(node_id: &str, msg_id: usize, line: &str) {
         },
     };
 
-    print_json_to_stdout(generate_response).await;
+    print_json_to_stdout(generate_response).await?;
+    Ok(())
 }

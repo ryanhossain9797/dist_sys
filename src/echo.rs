@@ -3,8 +3,8 @@ use crate::{
     utils::print_json_to_stdout,
 };
 
-pub async fn run_echo(node_id: &str, msg_id: usize, line: &str) {
-    let echo_data: EchoData = serde_json::from_str(&line).unwrap();
+pub async fn run_echo(node_id: &str, msg_id: usize, line: &str) -> anyhow::Result<()> {
+    let echo_data: EchoData = serde_json::from_str(&line)?;
 
     let echo_response: EchoData = EchoData {
         src: node_id.to_string(),
@@ -17,5 +17,6 @@ pub async fn run_echo(node_id: &str, msg_id: usize, line: &str) {
         },
     };
 
-    print_json_to_stdout(echo_response).await;
+    print_json_to_stdout(echo_response).await?;
+    Ok(())
 }
