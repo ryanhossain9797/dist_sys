@@ -30,7 +30,7 @@ pub async fn repl(
 
     loop {
         let (data, line) = read_json_from_stdin::<BaseData>(&mut reader).await?;
-        eprintln!("{line}");
+        eprintln!("INPUT: {line}");
         match node_id == data.dest {
             true => {
                 match data.body.r#type.as_str() {

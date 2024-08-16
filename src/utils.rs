@@ -4,10 +4,7 @@ use tokio::io::{AsyncWriteExt, BufReader, Lines, Stdin};
 pub async fn print_json_to_stdout<T: Serialize>(data: T) -> anyhow::Result<()> {
     let json = serde_json::to_string(&data)?;
 
-    if !json.contains("src") {
-        eprintln!("src missing {json}");
-        panic!("src missing {json}");
-    }
+    eprintln!("OUTPUT: {json}");
 
     tokio::io::stdout().write_all(json.as_bytes()).await?;
     tokio::io::stdout().write_all(b"\n").await?;
