@@ -28,8 +28,13 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
 
     print_json_to_stdout(broadcast_response)?;
 
-    let old_sent = &env.received_messages[&message];
-    let mut sent = env.received_messages[&message].clone();
+    let old_sent = env
+        .received_messages
+        .get(&message)
+        .map(|s| s.clone())
+        .unwrap_or_default();
+
+    let mut sent = old_sent.clone();
 
     sent.insert(generate_data.src.clone());
 
@@ -53,6 +58,8 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
 
         sent.insert(neighbor.clone());
     }
+
+    env.received_messages.insert(message, sent);
 
     Ok(())
 }
