@@ -17,7 +17,7 @@ pub async fn run_init(line: &str) -> anyhow::Result<(String, HashSet<String>)> {
         },
     };
 
-    print_json_to_stdout(&init_response).await?;
+    print_json_to_stdout(&init_response)?;
 
     Ok((init_data.body.node_id, init_data.body.node_ids))
 }

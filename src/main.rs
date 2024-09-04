@@ -12,33 +12,34 @@ mod types;
 mod utils;
 
 use std::collections::HashSet;
+use std::io::{self, BufRead, StdinLock};
 
 use generate::run_generate;
-use tokio::io::{self, AsyncBufReadExt, BufReader, Lines, Stdin};
 
 use echo::*;
 use init::*;
 use types::base::BaseData;
-use utils::read_json_from_stdin;
+use utils::read_json_from_string;
 
-pub async fn repl(
-    mut reader: Lines<BufReader<Stdin>>,
+pub fn repl(
+    handle: StdinLock<'static>,
     node_id: String,
     _node_ids: HashSet<String>,
 ) -> anyhow::Result<()> {
     let mut msg_id = 1;
 
-    loop {
-        let (data, line) = read_json_from_stdin::<BaseData>(&mut reader).await?;
+    for line in handle.lines() {
+        let line = line?;
+        let data = read_json_from_string::<BaseData>(&line)?;
         eprintln!("INPUT: {line}");
         match node_id == data.dest {
             true => {
                 match data.body.r#type.as_str() {
                     "echo" => {
-                        run_echo(node_id.as_str(), msg_id, &line).await?;
+                        run_echo(node_id.as_str(), msg_id, &line)?;
                     }
                     "generate" => {
-                        run_generate(node_id.as_str(), msg_id, &line).await?;
+                        run_generate(node_id.as_str(), msg_id, &line)?;
                     }
                     _ => {}
                 };
@@ -47,19 +48,24 @@ pub async fn repl(
             false => Err(anyhow::anyhow!("Target Node Invalid"))?,
         }
     }
+
+    Ok(())
 }
 
 async fn start() -> anyhow::Result<()> {
     let stdin = io::stdin();
-    let mut reader = BufReader::new(stdin).lines();
+    let mut handle = stdin.lock(); // Lock the stdin for reading
 
-    let (init_data, init_line) = read_json_from_stdin::<BaseData>(&mut reader).await?;
+    let mut first_line = String::new();
+    handle.read_line(&mut first_line)?;
+
+    let init_data = read_json_from_string::<BaseData>(&first_line)?;
 
     match init_data.body.r#type.as_str() {
         "init" => {
-            let (node_id, node_ids) = run_init(&init_line).await?;
+            let (node_id, node_ids) = run_init(&first_line).await?;
 
-            repl(reader, node_id, node_ids).await
+            repl(handle, node_id, node_ids)
         }
         _ => Err(anyhow::anyhow!("Not Init")),
     }
