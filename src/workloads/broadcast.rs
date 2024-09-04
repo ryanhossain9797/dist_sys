@@ -15,7 +15,7 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
 
     env.received.push(message);
 
-    let generate_response = BroadcastData {
+    let broadcast_response = BroadcastData {
         src: node_id.to_string(),
         dest: generate_data.src,
         body: BroadcastBody {
@@ -26,6 +26,6 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
         },
     };
 
-    print_json_to_stdout(generate_response)?;
+    print_json_to_stdout(broadcast_response)?;
     Ok(())
 }

@@ -20,6 +20,8 @@ use utils::read_json_from_string;
 use workloads::broadcast::run_broadcast;
 use workloads::echo::run_echo;
 use workloads::generate::run_generate;
+use workloads::read::run_read;
+use workloads::topology::run_topology;
 
 struct Environment {
     msg_id: usize,
@@ -51,6 +53,12 @@ pub fn repl(
                     }
                     "broadcast" => {
                         run_broadcast(node_id.as_str(), &mut env, &line)?;
+                    }
+                    "read" => {
+                        run_read(node_id.as_str(), &env, &line)?;
+                    }
+                    "topology" => {
+                        run_topology(node_id.as_str(), &env, &line)?;
                     }
                     _ => {}
                 };
