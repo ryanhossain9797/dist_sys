@@ -13,7 +13,7 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
         .message
         .ok_or_else(|| anyhow::anyhow!("No Message"))?;
 
-    env.received.push(message);
+    env.received_messages.push(message);
 
     let broadcast_response = BroadcastData {
         src: node_id.to_string(),
@@ -27,5 +27,19 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
     };
 
     print_json_to_stdout(broadcast_response)?;
+
+    for neighbor in env.neighbors.iter() {
+        let broadcast_response = BroadcastData {
+            src: node_id.to_string(),
+            dest: neighbor.clone(),
+            body: BroadcastBody {
+                r#type: "broadcast".to_string(),
+                msg_id,
+                in_reply_to: None,
+                message: Some(message),
+            },
+        };
+    }
+
     Ok(())
 }

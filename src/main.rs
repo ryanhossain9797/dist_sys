@@ -25,7 +25,8 @@ use workloads::topology::run_topology;
 
 struct Environment {
     msg_id: usize,
-    received: Vec<usize>,
+    received_messages: Vec<usize>,
+    neighbors: Vec<String>,
 }
 
 pub fn repl(
@@ -35,7 +36,8 @@ pub fn repl(
 ) -> anyhow::Result<()> {
     let mut env = Environment {
         msg_id: 1,
-        received: Vec::new(),
+        received_messages: Vec::new(),
+        neighbors: Vec::new(),
     };
 
     for line in handle.lines() {
@@ -58,7 +60,7 @@ pub fn repl(
                         run_read(node_id.as_str(), &env, &line)?;
                     }
                     "topology" => {
-                        run_topology(node_id.as_str(), &env, &line)?;
+                        run_topology(node_id.as_str(), &mut env, &line)?;
                     }
                     _ => {}
                 };
