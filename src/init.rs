@@ -5,7 +5,7 @@ use crate::{
     utils::print_json_to_stdout,
 };
 
-pub async fn run_init(line: &str) -> anyhow::Result<(String, HashSet<String>)> {
+pub fn run_init(line: &str) -> anyhow::Result<(String, HashSet<String>)> {
     let init_data: InitData = serde_json::from_str(&line)?;
 
     let init_response = InitResponseData {

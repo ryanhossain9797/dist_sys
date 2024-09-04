@@ -52,18 +52,18 @@ pub fn repl(
     Ok(())
 }
 
-async fn start() -> anyhow::Result<()> {
+fn start() -> anyhow::Result<()> {
     let stdin = io::stdin();
     let mut handle = stdin.lock(); // Lock the stdin for reading
 
     let mut first_line = String::new();
     handle.read_line(&mut first_line)?;
-
+    eprintln!("INPUT: {first_line}");
     let init_data = read_json_from_string::<BaseData>(&first_line)?;
 
     match init_data.body.r#type.as_str() {
         "init" => {
-            let (node_id, node_ids) = run_init(&first_line).await?;
+            let (node_id, node_ids) = run_init(&first_line)?;
 
             repl(handle, node_id, node_ids)
         }
@@ -71,9 +71,8 @@ async fn start() -> anyhow::Result<()> {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let failure = start().await;
+fn main() {
+    let failure = start();
 
     match failure {
         Ok(()) => {
