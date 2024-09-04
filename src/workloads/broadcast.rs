@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     types::broadcast::{BroadcastBody, BroadcastData},
     utils::print_json_to_stdout,
@@ -13,11 +15,9 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
         .message
         .ok_or_else(|| anyhow::anyhow!("No Message"))?;
 
-    env.received_messages.push(message);
-
     let broadcast_response = BroadcastData {
         src: node_id.to_string(),
-        dest: generate_data.src,
+        dest: generate_data.src.clone(),
         body: BroadcastBody {
             r#type: "broadcast_ok".to_string(),
             msg_id,
@@ -28,8 +28,17 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
 
     print_json_to_stdout(broadcast_response)?;
 
-    for neighbor in env.neighbors.iter() {
-        let broadcast_response = BroadcastData {
+    let old_sent = &env.received_messages[&message];
+    let mut sent = env.received_messages[&message].clone();
+
+    sent.insert(generate_data.src.clone());
+
+    for neighbor in env
+        .neighbors
+        .iter()
+        .filter(|n: &&String| !old_sent.contains(*n))
+    {
+        let broadcast = BroadcastData {
             src: node_id.to_string(),
             dest: neighbor.clone(),
             body: BroadcastBody {
@@ -39,6 +48,10 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
                 message: Some(message),
             },
         };
+
+        print_json_to_stdout(broadcast)?;
+
+        sent.insert(neighbor.clone());
     }
 
     Ok(())

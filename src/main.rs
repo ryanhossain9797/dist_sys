@@ -10,7 +10,7 @@ mod types;
 mod utils;
 mod workloads;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::{self, BufRead, StdinLock};
 
 use init::*;
@@ -25,8 +25,8 @@ use workloads::topology::run_topology;
 
 struct Environment {
     msg_id: usize,
-    received_messages: Vec<usize>,
-    neighbors: Vec<String>,
+    received_messages: HashMap<usize, HashSet<String>>,
+    neighbors: HashSet<String>,
 }
 
 pub fn repl(
@@ -36,8 +36,8 @@ pub fn repl(
 ) -> anyhow::Result<()> {
     let mut env = Environment {
         msg_id: 1,
-        received_messages: Vec::new(),
-        neighbors: Vec::new(),
+        received_messages: HashMap::new(),
+        neighbors: HashSet::new(),
     };
 
     for line in handle.lines() {

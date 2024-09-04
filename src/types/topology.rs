@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ pub struct TopologyBody {
     pub msg_id: usize,
     pub in_reply_to: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub topology: Option<HashMap<String, Vec<String>>>,
+    pub topology: Option<HashMap<String, HashSet<String>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -15,7 +15,7 @@ pub fn run_read(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<
             r#type: "read_ok".to_string(),
             msg_id,
             in_reply_to: Some(generate_data.body.msg_id),
-            messages: env.received_messages.clone(),
+            messages: env.received_messages.keys().cloned().collect(),
         },
     };
 
