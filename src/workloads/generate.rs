@@ -3,9 +3,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::{
     types::generate::{GenerateBody, GenerateData},
     utils::print_json_to_stdout,
+    Environment,
 };
 
-pub fn run_generate(node_id: &str, msg_id: usize, line: &str) -> anyhow::Result<()> {
+pub fn run_generate(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<()> {
+    let msg_id = env.msg_id;
+
     let generate_data: GenerateData = serde_json::from_str(&line)?;
 
     let now = SystemTime::now();
@@ -19,7 +22,7 @@ pub fn run_generate(node_id: &str, msg_id: usize, line: &str) -> anyhow::Result<
         dest: generate_data.src,
         body: GenerateBody {
             r#type: "generate_ok".to_string(),
-            msg_id: msg_id,
+            msg_id,
             in_reply_to: Some(generate_data.body.msg_id),
             id: Some(format!("{node_id}{utc_ticks}{msg_id}")),
         },

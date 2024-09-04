@@ -1,9 +1,11 @@
 use crate::{
     types::echo::{EchoBody, EchoData},
     utils::print_json_to_stdout,
+    Environment,
 };
 
-pub fn run_echo(node_id: &str, msg_id: usize, line: &str) -> anyhow::Result<()> {
+pub fn run_echo(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<()> {
+    let msg_id = env.msg_id;
     let echo_data: EchoData = serde_json::from_str(line)?;
 
     let echo_response: EchoData = EchoData {

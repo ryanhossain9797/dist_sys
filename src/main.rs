@@ -5,28 +5,36 @@
 
 {"src":"c1","dest":"n3","body":{"type":"generate","msg_id":1}}
  */
-mod echo;
-mod generate;
 mod init;
 mod types;
 mod utils;
+mod workloads;
 
 use std::collections::HashSet;
 use std::io::{self, BufRead, StdinLock};
 
-use generate::run_generate;
-
-use echo::*;
 use init::*;
 use types::base::BaseData;
 use utils::read_json_from_string;
+
+use workloads::broadcast::run_broadcast;
+use workloads::echo::run_echo;
+use workloads::generate::run_generate;
+
+struct Environment {
+    msg_id: usize,
+    received: Vec<usize>,
+}
 
 pub fn repl(
     handle: StdinLock<'static>,
     node_id: String,
     _node_ids: HashSet<String>,
 ) -> anyhow::Result<()> {
-    let mut msg_id = 1;
+    let mut env = Environment {
+        msg_id: 1,
+        received: Vec::new(),
+    };
 
     for line in handle.lines() {
         let line = line?;
@@ -36,14 +44,21 @@ pub fn repl(
             true => {
                 match data.body.r#type.as_str() {
                     "echo" => {
-                        run_echo(node_id.as_str(), msg_id, &line)?;
+                        run_echo(node_id.as_str(), &env, &line)?;
                     }
                     "generate" => {
-                        run_generate(node_id.as_str(), msg_id, &line)?;
+                        run_generate(node_id.as_str(), &env, &line)?;
+                    }
+                    "broadcast" => {
+                        run_broadcast(node_id.as_str(), &mut env, &line)?;
                     }
                     _ => {}
                 };
-                msg_id = msg_id + 1;
+
+                env = Environment {
+                    msg_id: env.msg_id + 1,
+                    ..env
+                };
             }
             false => Err(anyhow::anyhow!("Target Node Invalid"))?,
         }
