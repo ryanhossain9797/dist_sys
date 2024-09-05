@@ -1,12 +1,23 @@
 use std::collections::HashSet;
 
-use tokio::io::Stdout;
+use tokio::{io::Stdout, sync::mpsc::UnboundedReceiver};
 
 use crate::{
     types::broadcast::{BroadcastBody, BroadcastData},
     utils::print_json_to_stdout,
     Environment,
 };
+
+pub async fn outbound_broadcast_queue(
+    mut receiver: UnboundedReceiver<BroadcastData>,
+) -> anyhow::Result<!> {
+    let mut writer = tokio::io::stdout();
+    while let Some(broadcast) = receiver.recv().await {
+        print_json_to_stdout(&mut writer, broadcast).await?;
+    }
+
+    Err(anyhow::anyhow!("Unreachable"))
+}
 
 pub async fn run_broadcast(
     writer: &mut Stdout,
@@ -61,7 +72,7 @@ pub async fn run_broadcast(
             },
         };
 
-        print_json_to_stdout(writer, broadcast).await?;
+        env.broadcast_sender.send(broadcast)?;
 
         sent.insert(neighbor.clone());
 

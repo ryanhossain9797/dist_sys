@@ -5,6 +5,7 @@
 
 {"src":"c1","dest":"n3","body":{"type":"generate","msg_id":1}}
  */
+#![feature(never_type)]
 mod init;
 mod types;
 mod utils;
@@ -14,10 +15,12 @@ use std::collections::{HashMap, HashSet};
 
 use init::*;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines, Stdin, Stdout};
+use tokio::sync::mpsc::{Sender, UnboundedSender};
 use types::base::BaseData;
+use types::broadcast::BroadcastData;
 use utils::read_json_from_string;
 
-use workloads::broadcast::run_broadcast;
+use workloads::broadcast::{outbound_broadcast_queue, run_broadcast};
 use workloads::echo::run_echo;
 use workloads::generate::run_generate;
 use workloads::read::run_read;
@@ -27,6 +30,7 @@ struct Environment {
     msg_id: usize,
     received_messages: HashMap<usize, HashSet<String>>,
     neighbors: HashSet<String>,
+    broadcast_sender: UnboundedSender<BroadcastData>,
 }
 
 pub async fn repl(
@@ -35,10 +39,14 @@ pub async fn repl(
     node_id: String,
     _node_ids: HashSet<String>,
 ) -> anyhow::Result<()> {
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<BroadcastData>();
+
+    tokio::spawn(outbound_broadcast_queue(receiver));
     let mut env = Environment {
         msg_id: 1,
         received_messages: HashMap::new(),
         neighbors: HashSet::new(),
+        broadcast_sender: sender,
     };
 
     while let Some(line) = lines.next_line().await? {
