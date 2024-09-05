@@ -1,11 +1,16 @@
 use std::collections::HashSet;
 
+use tokio::io::Stdout;
+
 use crate::{
     types::init::{InitData, InitResponseBody, InitResponseData},
     utils::print_json_to_stdout,
 };
 
-pub fn run_init(line: &str) -> anyhow::Result<(String, HashSet<String>)> {
+pub async fn run_init(
+    writer: &mut Stdout,
+    line: &str,
+) -> anyhow::Result<(String, HashSet<String>)> {
     let init_data: InitData = serde_json::from_str(&line)?;
 
     let init_response = InitResponseData {
@@ -17,7 +22,7 @@ pub fn run_init(line: &str) -> anyhow::Result<(String, HashSet<String>)> {
         },
     };
 
-    print_json_to_stdout(&init_response)?;
+    print_json_to_stdout(writer, &init_response).await?;
 
     Ok((init_data.body.node_id, init_data.body.node_ids))
 }

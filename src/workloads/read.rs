@@ -1,10 +1,17 @@
+use tokio::io::Stdout;
+
 use crate::{
     types::read::{ReadBody, ReadData},
     utils::print_json_to_stdout,
     Environment,
 };
 
-pub fn run_read(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<()> {
+pub async fn run_read(
+    writer: &mut Stdout,
+    node_id: &str,
+    env: &Environment,
+    line: &str,
+) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
     let generate_data: ReadData = serde_json::from_str(&line)?;
 
@@ -19,6 +26,6 @@ pub fn run_read(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<
         },
     };
 
-    print_json_to_stdout(read_response)?;
+    print_json_to_stdout(writer, read_response).await?;
     Ok(())
 }

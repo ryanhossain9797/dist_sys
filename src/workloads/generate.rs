@@ -1,12 +1,19 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use tokio::io::Stdout;
+
 use crate::{
     types::generate::{GenerateBody, GenerateData},
     utils::print_json_to_stdout,
     Environment,
 };
 
-pub fn run_generate(node_id: &str, env: &Environment, line: &str) -> anyhow::Result<()> {
+pub async fn run_generate(
+    writer: &mut Stdout,
+    node_id: &str,
+    env: &Environment,
+    line: &str,
+) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
 
     let generate_data: GenerateData = serde_json::from_str(&line)?;
@@ -28,6 +35,6 @@ pub fn run_generate(node_id: &str, env: &Environment, line: &str) -> anyhow::Res
         },
     };
 
-    print_json_to_stdout(generate_response)?;
+    print_json_to_stdout(writer, generate_response).await?;
     Ok(())
 }

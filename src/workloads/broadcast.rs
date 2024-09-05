@@ -1,12 +1,19 @@
 use std::collections::HashSet;
 
+use tokio::io::Stdout;
+
 use crate::{
     types::broadcast::{BroadcastBody, BroadcastData},
     utils::print_json_to_stdout,
     Environment,
 };
 
-pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow::Result<()> {
+pub async fn run_broadcast(
+    writer: &mut Stdout,
+    node_id: &str,
+    env: &mut Environment,
+    line: &str,
+) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
     let generate_data: BroadcastData = serde_json::from_str(&line)?;
 
@@ -26,7 +33,7 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
         },
     };
 
-    print_json_to_stdout(broadcast_response)?;
+    print_json_to_stdout(writer, broadcast_response).await?;
 
     let old_sent = env
         .received_messages
@@ -54,7 +61,7 @@ pub fn run_broadcast(node_id: &str, env: &mut Environment, line: &str) -> anyhow
             },
         };
 
-        print_json_to_stdout(broadcast)?;
+        print_json_to_stdout(writer, broadcast).await?;
 
         sent.insert(neighbor.clone());
     }

@@ -1,11 +1,15 @@
 use serde::Serialize;
+use tokio::io::{AsyncWriteExt, Stdout};
 
-pub fn print_json_to_stdout<T: Serialize>(data: T) -> anyhow::Result<()> {
+pub async fn print_json_to_stdout<T: Serialize>(
+    writer: &mut Stdout,
+    data: T,
+) -> anyhow::Result<()> {
     let json = serde_json::to_string(&data)?;
 
     eprintln!("OUTPUT: {json}");
 
-    println!("{json}");
+    writer.write_all(format!("{json}\n").as_bytes()).await;
     Ok(())
 }
 

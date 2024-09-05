@@ -11,9 +11,9 @@ mod utils;
 mod workloads;
 
 use std::collections::{HashMap, HashSet};
-use std::io::{self, BufRead, StdinLock};
 
 use init::*;
+use tokio::io::{AsyncBufReadExt, BufReader, Lines, Stdin, Stdout};
 use types::base::BaseData;
 use utils::read_json_from_string;
 
@@ -29,8 +29,9 @@ struct Environment {
     neighbors: HashSet<String>,
 }
 
-pub fn repl(
-    handle: StdinLock<'static>,
+pub async fn repl(
+    mut lines: Lines<BufReader<Stdin>>,
+    mut writer: Stdout,
     node_id: String,
     _node_ids: HashSet<String>,
 ) -> anyhow::Result<()> {
@@ -40,27 +41,26 @@ pub fn repl(
         neighbors: HashSet::new(),
     };
 
-    for line in handle.lines() {
-        let line = line?;
+    while let Some(line) = lines.next_line().await? {
         let data = read_json_from_string::<BaseData>(&line)?;
         eprintln!("INPUT: {line}");
         match node_id == data.dest {
             true => {
                 match data.body.r#type.as_str() {
                     "echo" => {
-                        run_echo(node_id.as_str(), &env, &line)?;
+                        run_echo(&mut writer, node_id.as_str(), &env, &line).await?;
                     }
                     "generate" => {
-                        run_generate(node_id.as_str(), &env, &line)?;
+                        run_generate(&mut writer, node_id.as_str(), &env, &line).await?;
                     }
                     "broadcast" => {
-                        run_broadcast(node_id.as_str(), &mut env, &line)?;
+                        run_broadcast(&mut writer, node_id.as_str(), &mut env, &line).await?;
                     }
                     "read" => {
-                        run_read(node_id.as_str(), &env, &line)?;
+                        run_read(&mut writer, node_id.as_str(), &env, &line).await?;
                     }
                     "topology" => {
-                        run_topology(node_id.as_str(), &mut env, &line)?;
+                        run_topology(&mut writer, node_id.as_str(), &mut env, &line).await?;
                     }
                     _ => {}
                 };
@@ -77,27 +77,33 @@ pub fn repl(
     Ok(())
 }
 
-fn start() -> anyhow::Result<()> {
-    let stdin = io::stdin();
-    let mut handle = stdin.lock(); // Lock the stdin for reading
+async fn start() -> anyhow::Result<()> {
+    let stdin = tokio::io::stdin();
+    let mut reader = BufReader::new(stdin); // Lock the stdin for reading
 
     let mut first_line = String::new();
-    handle.read_line(&mut first_line)?;
+    reader.read_line(&mut first_line).await?;
+
     eprintln!("INPUT: {first_line}");
     let init_data = read_json_from_string::<BaseData>(&first_line)?;
 
+    let mut writer = tokio::io::stdout();
+
     match init_data.body.r#type.as_str() {
         "init" => {
-            let (node_id, node_ids) = run_init(&first_line)?;
+            let (node_id, node_ids) = run_init(&mut writer, &first_line).await?;
 
-            repl(handle, node_id, node_ids)
+            let lines = reader.lines();
+
+            repl(lines, writer, node_id, node_ids).await
         }
         _ => Err(anyhow::anyhow!("Not Init")),
     }
 }
 
-fn main() {
-    let failure = start();
+#[tokio::main]
+async fn main() {
+    let failure = start().await;
 
     match failure {
         Ok(()) => {
