@@ -9,7 +9,7 @@ pub async fn print_json_to_stdout<T: Serialize>(
 
     eprintln!("OUTPUT: {json}");
 
-    writer.write_all(format!("{json}\n").as_bytes()).await;
+    writer.write_all(format!("{json}\n").as_bytes()).await?;
     Ok(())
 }
 

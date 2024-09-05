@@ -10,10 +10,3 @@ pub struct TopologyBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub topology: Option<HashMap<String, HashSet<String>>>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TopologyData {
-    pub src: String,
-    pub dest: String,
-    pub body: TopologyBody,
-}

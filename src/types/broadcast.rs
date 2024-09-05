@@ -8,10 +8,3 @@ pub struct BroadcastBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<usize>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BroadcastData {
-    pub src: String,
-    pub dest: String,
-    pub body: BroadcastBody,
-}

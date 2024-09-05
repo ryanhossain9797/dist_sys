@@ -1,7 +1,7 @@
 use tokio::io::Stdout;
 
 use crate::{
-    types::echo::{EchoBody, EchoData},
+    types::{base::BaseData, echo::EchoBody},
     utils::print_json_to_stdout,
     Environment,
 };
@@ -13,9 +13,9 @@ pub async fn run_echo(
     line: &str,
 ) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
-    let echo_data: EchoData = serde_json::from_str(line)?;
+    let echo_data: BaseData<EchoBody> = serde_json::from_str(line)?;
 
-    let echo_response: EchoData = EchoData {
+    let echo_response: BaseData<EchoBody> = BaseData {
         src: node_id.to_string(),
         dest: echo_data.src,
         body: EchoBody {

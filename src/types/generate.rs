@@ -7,10 +7,3 @@ pub struct GenerateBody {
     pub in_reply_to: Option<usize>,
     pub id: Option<String>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GenerateData {
-    pub src: String,
-    pub dest: String,
-    pub body: GenerateBody,
-}

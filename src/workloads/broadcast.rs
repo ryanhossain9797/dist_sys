@@ -1,15 +1,13 @@
-use std::collections::HashSet;
-
 use tokio::{io::Stdout, sync::mpsc::UnboundedReceiver};
 
 use crate::{
-    types::broadcast::{BroadcastBody, BroadcastData},
+    types::{base::BaseData, broadcast::BroadcastBody},
     utils::print_json_to_stdout,
     Environment,
 };
 
 pub async fn outbound_broadcast_queue(
-    mut receiver: UnboundedReceiver<BroadcastData>,
+    mut receiver: UnboundedReceiver<BaseData<BroadcastBody>>,
 ) -> anyhow::Result<!> {
     let mut writer = tokio::io::stdout();
     while let Some(broadcast) = receiver.recv().await {
@@ -26,14 +24,14 @@ pub async fn run_broadcast(
     line: &str,
 ) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
-    let generate_data: BroadcastData = serde_json::from_str(&line)?;
+    let generate_data: BaseData<BroadcastBody> = serde_json::from_str(&line)?;
 
     let message = generate_data
         .body
         .message
         .ok_or_else(|| anyhow::anyhow!("No Message"))?;
 
-    let broadcast_response = BroadcastData {
+    let broadcast_response = BaseData {
         src: node_id.to_string(),
         dest: generate_data.src.clone(),
         body: BroadcastBody {
@@ -61,7 +59,7 @@ pub async fn run_broadcast(
         .iter()
         .filter(|n: &&String| !old_sent.contains(*n))
     {
-        let broadcast = BroadcastData {
+        let broadcast = BaseData {
             src: node_id.to_string(),
             dest: neighbor.clone(),
             body: BroadcastBody {

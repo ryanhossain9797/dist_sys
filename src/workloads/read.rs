@@ -1,7 +1,7 @@
 use tokio::io::Stdout;
 
 use crate::{
-    types::read::{ReadBody, ReadData},
+    types::{base::BaseData, read::ReadBody},
     utils::print_json_to_stdout,
     Environment,
 };
@@ -13,9 +13,9 @@ pub async fn run_read(
     line: &str,
 ) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
-    let generate_data: ReadData = serde_json::from_str(&line)?;
+    let generate_data: BaseData<ReadBody> = serde_json::from_str(&line)?;
 
-    let read_response = ReadData {
+    let read_response = BaseData {
         src: node_id.to_string(),
         dest: generate_data.src,
         body: ReadBody {

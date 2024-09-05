@@ -15,9 +15,10 @@ use std::collections::{HashMap, HashSet};
 
 use init::*;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines, Stdin, Stdout};
-use tokio::sync::mpsc::{Sender, UnboundedSender};
-use types::base::BaseData;
-use types::broadcast::BroadcastData;
+use tokio::sync::mpsc::UnboundedSender;
+use types::base::{BaseBody, BaseData};
+use types::broadcast::BroadcastBody;
+use types::init::InitBody;
 use utils::read_json_from_string;
 
 use workloads::broadcast::{outbound_broadcast_queue, run_broadcast};
@@ -30,7 +31,7 @@ struct Environment {
     msg_id: usize,
     received_messages: HashMap<usize, HashSet<String>>,
     neighbors: HashSet<String>,
-    broadcast_sender: UnboundedSender<BroadcastData>,
+    broadcast_sender: UnboundedSender<BaseData<BroadcastBody>>,
 }
 
 pub async fn repl(
@@ -39,7 +40,7 @@ pub async fn repl(
     node_id: String,
     _node_ids: HashSet<String>,
 ) -> anyhow::Result<()> {
-    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<BroadcastData>();
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<BaseData<BroadcastBody>>();
 
     tokio::spawn(outbound_broadcast_queue(receiver));
     let mut env = Environment {
@@ -50,7 +51,7 @@ pub async fn repl(
     };
 
     while let Some(line) = lines.next_line().await? {
-        let data = read_json_from_string::<BaseData>(&line)?;
+        let data = read_json_from_string::<BaseData<BaseBody>>(&line)?;
         eprintln!("INPUT: {line}");
         match node_id == data.dest {
             true => {
@@ -90,7 +91,7 @@ async fn start() -> anyhow::Result<()> {
     reader.read_line(&mut first_line).await?;
 
     eprintln!("INPUT: {first_line}");
-    let init_data = read_json_from_string::<BaseData>(&first_line)?;
+    let init_data = read_json_from_string::<BaseData<InitBody>>(&first_line)?;
 
     let mut writer = tokio::io::stdout();
 

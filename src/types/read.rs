@@ -8,10 +8,3 @@ pub struct ReadBody {
     #[serde(default)]
     pub messages: Vec<usize>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ReadData {
-    pub src: String,
-    pub dest: String,
-    pub body: ReadBody,
-}

@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::Stdout;
 
 use crate::{
-    types::generate::{GenerateBody, GenerateData},
+    types::{base::BaseData, generate::GenerateBody},
     utils::print_json_to_stdout,
     Environment,
 };
@@ -16,7 +16,7 @@ pub async fn run_generate(
 ) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
 
-    let generate_data: GenerateData = serde_json::from_str(&line)?;
+    let generate_data: BaseData<GenerateBody> = serde_json::from_str(&line)?;
 
     let now = SystemTime::now();
 
@@ -24,7 +24,7 @@ pub async fn run_generate(
     let duration_since_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
     let utc_ticks = duration_since_epoch.as_micros();
 
-    let generate_response: GenerateData = GenerateData {
+    let generate_response: BaseData<GenerateBody> = BaseData {
         src: node_id.to_string(),
         dest: generate_data.src,
         body: GenerateBody {

@@ -1,7 +1,7 @@
 use tokio::io::Stdout;
 
 use crate::{
-    types::topology::{TopologyBody, TopologyData},
+    types::{base::BaseData, topology::TopologyBody},
     utils::print_json_to_stdout,
     Environment,
 };
@@ -13,7 +13,7 @@ pub async fn run_topology(
     line: &str,
 ) -> anyhow::Result<()> {
     let msg_id = env.msg_id;
-    let generate_data: TopologyData = serde_json::from_str(&line)?;
+    let generate_data: BaseData<TopologyBody> = serde_json::from_str(&line)?;
 
     let topology = generate_data
         .body
@@ -24,7 +24,7 @@ pub async fn run_topology(
 
     env.neighbors = topology;
 
-    let topology_response = TopologyData {
+    let topology_response = BaseData {
         src: node_id.to_string(),
         dest: generate_data.src,
         body: TopologyBody {

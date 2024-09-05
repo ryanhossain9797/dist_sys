@@ -1,13 +1,13 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct BaseBody {
     pub r#type: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct BaseData {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BaseData<Body> {
     pub src: String,
     pub dest: String,
-    pub body: BaseBody,
+    pub body: Body,
 }

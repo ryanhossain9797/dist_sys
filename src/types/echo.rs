@@ -7,10 +7,3 @@ pub struct EchoBody {
     pub in_reply_to: Option<usize>,
     pub echo: String,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct EchoData {
-    pub src: String,
-    pub dest: String,
-    pub body: EchoBody,
-}
