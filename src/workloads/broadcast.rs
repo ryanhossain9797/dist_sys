@@ -64,6 +64,8 @@ pub async fn run_broadcast(
         print_json_to_stdout(writer, broadcast).await?;
 
         sent.insert(neighbor.clone());
+
+        env.msg_id += 1;
     }
 
     env.received_messages.insert(message, sent);

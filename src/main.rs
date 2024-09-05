@@ -65,10 +65,7 @@ pub async fn repl(
                     _ => {}
                 };
 
-                env = Environment {
-                    msg_id: env.msg_id + 1,
-                    ..env
-                };
+                env.msg_id += 1;
             }
             false => Err(anyhow::anyhow!("Target Node Invalid"))?,
         }
