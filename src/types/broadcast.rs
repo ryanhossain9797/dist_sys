@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+use super::base::{BaseBody, BaseData};
+
+pub enum BroadcastQueueAction {
+    SendBroadCast(BaseData<BroadcastBody>),
+    Ack(usize),
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BroadcastBody {
     pub r#type: String,

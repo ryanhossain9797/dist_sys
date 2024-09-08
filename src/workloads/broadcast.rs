@@ -1,17 +1,34 @@
+use std::collections::HashSet;
+
 use tokio::{io::Stdout, sync::mpsc::UnboundedReceiver};
 
 use crate::{
-    types::{base::BaseData, broadcast::BroadcastBody},
+    types::{
+        base::BaseData,
+        broadcast::{BroadcastBody, BroadcastQueueAction},
+    },
     utils::print_json_to_stdout,
     Environment,
 };
 
 pub async fn outbound_broadcast_queue(
-    mut receiver: UnboundedReceiver<BaseData<BroadcastBody>>,
+    mut receiver: UnboundedReceiver<BroadcastQueueAction>,
 ) -> anyhow::Result<!> {
+    let mut awaiting_ack = HashSet::<usize>::new();
+
     let mut writer = tokio::io::stdout();
     while let Some(broadcast) = receiver.recv().await {
-        print_json_to_stdout(&mut writer, broadcast).await?;
+        match broadcast {
+            BroadcastQueueAction::SendBroadCast(broadcast) => {
+                awaiting_ack.insert(broadcast.body.msg_id);
+                print_json_to_stdout(&mut writer, broadcast).await?;
+                eprintln!("remaining ack: {:?}", awaiting_ack)
+            }
+            BroadcastQueueAction::Ack(msg_id) => {
+                awaiting_ack.remove(&msg_id);
+                eprintln!("remaining ack: {:?}", awaiting_ack)
+            }
+        }
     }
 
     Err(anyhow::anyhow!("Unreachable"))
@@ -70,7 +87,8 @@ pub async fn run_broadcast(
             },
         };
 
-        env.broadcast_sender.send(broadcast)?;
+        env.broadcast_sender
+            .send(BroadcastQueueAction::SendBroadCast(broadcast))?;
 
         sent.insert(neighbor.clone());
 
@@ -78,6 +96,31 @@ pub async fn run_broadcast(
     }
 
     env.received_messages.insert(message, sent);
+
+    Ok(())
+}
+
+pub async fn run_broadcast_ack(
+    node_id: &str,
+    env: &mut Environment,
+    line: &str,
+) -> anyhow::Result<()> {
+    let generate_data: BaseData<BroadcastBody> = serde_json::from_str(&line)?;
+
+    match generate_data.dest == node_id {
+        true => env.broadcast_sender.send(BroadcastQueueAction::Ack(
+            generate_data
+                .body
+                .in_reply_to
+                .expect("ok ack should be in reply to a message"),
+        ))?,
+        false => {
+            eprintln!("Acknowledgememt for different node received");
+            Err(anyhow::anyhow!(
+                "Acknowledgememt for different node received"
+            ))?
+        }
+    }
 
     Ok(())
 }
