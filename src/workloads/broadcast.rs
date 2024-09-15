@@ -1,6 +1,14 @@
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    thread::spawn,
+    time::{Duration, SystemTime},
+};
 
-use tokio::{io::Stdout, sync::mpsc::UnboundedReceiver};
+use tokio::{
+    io::Stdout,
+    sync::mpsc::{UnboundedReceiver, UnboundedSender},
+    time::Instant,
+};
 
 use crate::{
     types::{
@@ -11,22 +19,64 @@ use crate::{
     Environment,
 };
 
+const RETRY_MILLIS: u64 = 500;
+
 pub async fn outbound_broadcast_queue(
     mut receiver: UnboundedReceiver<BroadcastQueueAction>,
+    sender: UnboundedSender<BroadcastQueueAction>,
 ) -> anyhow::Result<!> {
-    let mut awaiting_ack = HashSet::<usize>::new();
+    let initial_sender = sender.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        initial_sender.send(BroadcastQueueAction::ResendBroadcast)
+    });
+
+    let mut awaiting_ack = HashMap::<usize, (SystemTime, BaseData<BroadcastBody>)>::new();
 
     let mut writer = tokio::io::stdout();
     while let Some(broadcast) = receiver.recv().await {
         match broadcast {
             BroadcastQueueAction::SendBroadCast(broadcast) => {
-                awaiting_ack.insert(broadcast.body.msg_id);
+                awaiting_ack.insert(
+                    broadcast.body.msg_id,
+                    (SystemTime::now(), broadcast.clone()),
+                );
                 print_json_to_stdout(&mut writer, broadcast).await?;
                 eprintln!("remaining ack: {:?}", awaiting_ack)
             }
             BroadcastQueueAction::Ack(msg_id) => {
                 awaiting_ack.remove(&msg_id);
                 eprintln!("remaining ack: {:?}", awaiting_ack)
+            }
+            BroadcastQueueAction::ResendBroadcast => {
+                let now = SystemTime::now();
+
+                eprintln!("Rechecking at: {:?}", now);
+
+                let before = SystemTime::now()
+                    .checked_sub(Duration::from_millis(RETRY_MILLIS))
+                    .expect("2 seconds should be ok");
+
+                let retries: Vec<BaseData<BroadcastBody>> = awaiting_ack
+                    .iter()
+                    .filter_map(|(id, (time, data))| match *time < before {
+                        true => Some(data.clone()),
+                        false => None,
+                    })
+                    .collect();
+
+                eprintln!("Rechecking {} items", retries.len());
+
+                for broadcast in retries {
+                    print_json_to_stdout(&mut writer, broadcast).await?
+                }
+
+                let sender = sender.clone();
+
+                tokio::spawn(async move {
+                    tokio::time::sleep(Duration::from_millis(RETRY_MILLIS)).await;
+                    sender.send(BroadcastQueueAction::ResendBroadcast)
+                });
             }
         }
     }

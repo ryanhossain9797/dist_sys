@@ -42,7 +42,7 @@ pub async fn repl(
 ) -> anyhow::Result<()> {
     let (sender, receiver) = unbounded_channel::<BroadcastQueueAction>();
 
-    tokio::spawn(outbound_broadcast_queue(receiver));
+    tokio::spawn(outbound_broadcast_queue(receiver, sender.clone()));
     let mut env = Environment {
         msg_id: 1,
         received_messages: HashMap::new(),

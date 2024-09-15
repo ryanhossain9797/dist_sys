@@ -5,6 +5,7 @@ use super::base::{BaseBody, BaseData};
 pub enum BroadcastQueueAction {
     SendBroadCast(BaseData<BroadcastBody>),
     Ack(usize),
+    ResendBroadcast
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
